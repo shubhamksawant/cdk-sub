@@ -6,6 +6,9 @@ import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as dynamo from 'aws-cdk-lib/aws-dynamodb';
 import { table } from 'console';
+import * as athena from 'aws-cdk-lib/aws-athena';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as opensearch from 'aws-cdk-lib/aws-opensearch';
 
 
 
@@ -20,7 +23,7 @@ export class FusionSubscriberStack extends Stack {
 /////////////////// S3 alert bucket  emr ///////////////////////
 
     // Create the alert S3 bucket
-    const myBucket = new s3.Bucket(this, 's3-data-bucket', {
+    const alertBucket = new s3.Bucket(this, 's3-data-bucket', {
       bucketName: 's3-test-bucket-alert-data',
       versioned: false,
       publicReadAccess: false,
@@ -38,7 +41,7 @@ export class FusionSubscriberStack extends Stack {
  
 /////////////////// dynamo db table ///////////////////////
 
-const table = new dynamo.Table(this, 'AlertDataDynamoDB', {
+const dynamodbtable = new dynamo.Table(this, 'AlertDataDynamoDB', {
   partitionKey: {
     name: 'id',
     type: dynamo.AttributeType.STRING
@@ -54,6 +57,50 @@ const table = new dynamo.Table(this, 'AlertDataDynamoDB', {
   // removalPolicy: cdk.RemovalPolicy.DESTROY,
   tableName: 'DynamoDBTable'
 });
+
+
+/////////////////// opensearch ///////////////////////
+
+
+
+
+
+
+
+
+
+
+/////////////////// athena ///////////////////////
+ // Create an Athena database and table using the S3 bucket
+ const athenadatabase = new athena.CfnNamedQuery.database(this, 'Database', {
+  databaseName: 'athena_db'
+});
+
+const table = new athena.Table(this, 'Table', {
+  database: athenadatabase,
+  tableName: 'athena_table',
+  dataFormat: athena.DataFormat.PARQUET,
+  inputBucket: alertBucket
+});
+
+// Create a sample query to retrieve data from the table
+const sampleQuery = new athena.CfnNamedQuery(this, 'SampleQuery', {
+  database: athenadatabase.databaseName,
+  queryString: `SELECT * FROM "${table.tableName}"`
+});
+
+
+
+}
+}
+
+
+
+
+
+/////////////////// glue ///////////////////////
+
+
 
 
 
